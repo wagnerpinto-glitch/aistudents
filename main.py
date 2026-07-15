@@ -2,10 +2,14 @@ import copy
 import os
 import numpy as np
 import pandas as pd
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from plots import plot_sensitivity_analysis, plot_pedagogical_heatmap
+
 from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
@@ -14,6 +18,8 @@ from sklearn.compose import ColumnTransformer
 # Configurando semente aleatória para reprodutibilidade científica
 torch.manual_seed(42)
 np.random.seed(42)
+if hasattr(torch, "set_num_threads"):
+    torch.set_num_threads(max(1, min(4, os.cpu_count() or 1)))
 
 # =====================================================================
 # 1. PRÉ-PROCESSAMENTO E ENGENHARIA DE FEATURES
@@ -81,21 +87,20 @@ class SimuVeredRegressor(nn.Module):
     def __init__(self, input_dim):
         super(SimuVeredRegressor, self).__init__()
         self.network = nn.Sequential(
-            nn.Linear(input_dim, 128),
-            nn.BatchNorm1d(128),
-            nn.ReLU(),
-            nn.Dropout(0.25),
-            
-            nn.Linear(128, 64),
+            nn.Linear(input_dim, 64),
             nn.BatchNorm1d(64),
             nn.ReLU(),
-            nn.Dropout(0.2),
+            nn.Dropout(0.15),
             
             nn.Linear(64, 32),
             nn.BatchNorm1d(32),
             nn.ReLU(),
+            nn.Dropout(0.1),
             
-            nn.Linear(32, 1)
+            nn.Linear(32, 16),
+            nn.ReLU(),
+            
+            nn.Linear(16, 1)
         )
         
     def forward(self, x):
@@ -105,7 +110,7 @@ class SimuVeredRegressor(nn.Module):
 # 4. CICLO DE TREINAMENTO
 # =====================================================================
 
-def train_model(model, train_loader, val_loader, epochs=40, lr=0.0008, patience=8, min_delta=1e-4, device=None):
+def train_model(model, train_loader, val_loader, epochs=12, lr=0.0008, patience=5, min_delta=1e-4, device=None):
     criterion = nn.SmoothL1Loss(beta=1.0)
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5, min_lr=1e-5)
@@ -252,25 +257,54 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Dispositivo de treinamento: {device}")
     
-    train_loader = DataLoader(train_dataset, batch_size=512, shuffle=True, num_workers=0)
-    val_loader = DataLoader(val_dataset, batch_size=512, shuffle=False, num_workers=0)
+    train_loader = DataLoader(train_dataset, batch_size=1024, shuffle=True, num_workers=0)
+    val_loader = DataLoader(val_dataset, batch_size=1024, shuffle=False, num_workers=0)
     
     # 3. Inicializar a rede neural
     input_size = X_train.shape[1]
     model = SimuVeredRegressor(input_dim=input_size).to(device)
     
     # 4. Treinar
-    train_losses, val_losses, best_epoch, best_val_loss = train_model(model, train_loader, val_loader, epochs=40, lr=0.0008, patience=8, device=device)
-    
-    # 5. Executar simulação teórica para um aluno de STEM no primeiro ano
+    train_losses, val_losses, best_epoch, best_val_loss = train_model(model, train_loader, val_loader, epochs=12, lr=0.0008, patience=5, device=device)
+
+    # 5. Gerar gráfico de perda
+    epochs_range = range(1, len(train_losses) + 1)
+    plt.figure(figsize=(8, 5))
+    plt.plot(epochs_range, train_losses, label='Loss Treino', color='tab:blue', linewidth=2)
+    plt.plot(epochs_range, val_losses, label='Loss Val', color='tab:orange', linewidth=2)
+    plt.xlabel('Época')
+    plt.ylabel('Loss')
+    plt.title('Curva de perda do treinamento da rede neural')
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.3)
+    plt.tight_layout()
+    os.makedirs('plots', exist_ok=True)
+    plt.savefig('plots/loss_curve.png', dpi=300, bbox_inches='tight')
+    plt.close()
+    print("Gráfico salvo em plots/loss_curve.png")
+
+    # 5. Definir o estudante de exemplo para as análises
     exemplo_estudante = {
         'Major_Category': 'STEM',
         'Year_of_Study': 'Freshman',
-        'Pre_Semester_GPA': 2.80,
+        'Primary_Use_Case': 'Summarizing_Reading',
+        'Prompt_Engineering_Skill': 'Intermediate',
+        'Weekly_GenAI_Hours': 10.0,
+        'Traditional_Study_Hours': 12.0,
         'Tool_Diversity': 3,
-        'Paid_Subscription': False,
+        'Pre_Semester_GPA': 2.80,
+        'Paid_Subscription': 0,
         'Anxiety_Level_During_Exams': 6,
         'Perceived_AI_Dependency': 5
     }
     
+    # 6. Gerar a Curva de Sensibilidade (O perigo do uso excessivo e sem tutor)
+    plot_sensitivity_analysis(model, preprocessor, exemplo_estudante, device=device)
+    
+    # 7. Gerar o Heatmap Bidimensional (Equilíbrio de estudo)
+    plot_pedagogical_heatmap(model, preprocessor, exemplo_estudante, device=device)
+
+    # 8. Executar simulação teórica para um aluno de STEM no primeiro ano
     simulate_veredai_impact(model, preprocessor, exemplo_estudante, target_mean, target_std, device)
+
+    torch.save(model.state_dict(), 'simuvered_model.pth')
