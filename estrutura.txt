@@ -1,0 +1,14 @@
+aistudets/
+│
+├── data/
+│   └── ai_student_impact_dataset.csv     # Dataset baixado do Kaggle
+│
+├── src/
+│   ├── __init__.py
+│   ├── dataset.py                        # Classe de Dataset customizada do PyTorch
+│   ├── model.py                          # Definição da arquitetura da Rede Neural (MLP)
+│   ├── train.py                          # Script de treinamento e validação
+│   └── simulator.py                      # Motor de Simulação "What-If" (Integração VeredAI)
+│
+├── main.py                               # Arquivo principal para executar o pipeline completo
+└── requirements.txt                      # Bibliotecas necessárias (torch, pandas, scikit-learn)
