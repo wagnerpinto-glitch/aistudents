@@ -32,7 +32,7 @@ def plot_loss_curve(train_losses, val_losses, best_epoch):
     # Linha indicando a melhor época (onde os pesos foram salvos)
     plt.axvline(x=best_epoch, color='red', linestyle=':', label=f'Melhor Época ({best_epoch})')
     
-    plt.title('Curva de Convergência do SimuVered (MLP)', pad=8)
+    plt.title('Curva de Convergência do Modelo (MLP)', pad=8)
     plt.xlabel('Épocas de Treinamento')
     plt.ylabel('Erro Quadrático Médio (MSE)')
     plt.legend(frameon=True, fontsize=10)
@@ -111,7 +111,7 @@ def plot_sensitivity_analysis(model, preprocessor, base_student_data, device=Non
             
     plt.figure(figsize=(9, 5))
     plt.plot(ai_hours_range, predictions_beginner, label='Uso Passivo (Sem Tutor/Beginner)', color='#d62728', linewidth=2.5)
-    plt.plot(ai_hours_range, predictions_advanced, label='Uso Ativo (Com VeredAI/Advanced)', color='#2ca02c', linewidth=2.5)
+    plt.plot(ai_hours_range, predictions_advanced, label='Uso Ativo (Com IA/Advanced)', color='#2ca02c', linewidth=2.5)
     
     plt.axhline(0, color='gray', linestyle=':', alpha=0.6)
     plt.title('Análise de Sensibilidade: Impacto das Horas de IA no GPA', pad=8)

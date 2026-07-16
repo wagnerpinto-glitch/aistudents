@@ -181,21 +181,21 @@ def train_model(model, train_loader, val_loader, epochs=12, lr=0.0008, patience=
 
 def simulate_veredai_impact(model, preprocessor, base_student_data, target_mean, target_std, device):
     """
-    Simula o impacto de uma intervenção do VeredAI nos hábitos do aluno.
+    Simula o impacto de uma intervenção de IA nos hábitos do aluno.
     """
     model.eval()
     
-    # Cenário A: Estudante antes do uso do VeredAI (Pouca habilidade com IA, uso passivo)
+    # Cenário A: Estudante antes do uso IA (Pouca habilidade com IA, uso passivo)
     student_before = base_student_data.copy()
     student_before['Prompt_Engineering_Skill'] = 'Beginner'
     student_before['Primary_Use_Case'] = 'Direct_Answer_Generation' # Uso sem engajamento cognitivo
     student_before['Weekly_GenAI_Hours'] = 25.0                     # Alta dependência ineficaz
     student_before['Traditional_Study_Hours'] = 4.0                 # Pouco estudo tradicional
     
-    # Cenário B: Estudante após interagir com a Tutoria Resiliente do VeredAI
+    # Cenário B: Estudante após interagir com a Tutoria em IA
     # (O tutor local estimula o método socrático, melhora o prompt do aluno e equilibra o estudo)
     student_after = base_student_data.copy()
-    student_after['Prompt_Engineering_Skill'] = 'Advanced'         # VeredAI treinou o aluno
+    student_after['Prompt_Engineering_Skill'] = 'Advanced'         # IA treinou o aluno
     student_after['Primary_Use_Case'] = 'Summarizing_Reading'      # Foco em leitura assistida e resumos
     student_after['Weekly_GenAI_Hours'] = 10.0                     # Uso consciente e focado da IA
     student_after['Traditional_Study_Hours'] = 12.0                # Retorno equilibrado ao estudo tradicional
@@ -216,7 +216,7 @@ def simulate_veredai_impact(model, preprocessor, base_student_data, target_mean,
     pred_after = pred_after_norm * target_std + target_mean
         
     print("\n" + "="*60)
-    print(" SIMULAÇÃO DE IMPACTO PEDAGÓGICO: VEREDAI ")
+    print(" SIMULAÇÃO DE IMPACTO PEDAGÓGICO COM A UTILIZAÇÃO DA IA")
     print("="*60)
     print(f"Estudante de {base_student_data['Major_Category']} ({base_student_data['Year_of_Study']})")
     print(f"GPA Inicial: {base_student_data['Pre_Semester_GPA']:.2f}\n")
@@ -226,13 +226,13 @@ def simulate_veredai_impact(model, preprocessor, base_student_data, target_mean,
     print(f"    -> Evolução Prevista de GPA (Delta): {pred_before:+.3f}")
     print(f"    -> GPA Final Estimado: {base_student_data['Pre_Semester_GPA'] + pred_before:.2f}")
     print("-" * 60)
-    print(f"[+] CENÁRIO COM VEREDAI (Uso ativo/socrático):")
+    print(f"[+] CENÁRIO COM IA (Uso ativo/socrático):")
     print(f"    - Horas de IA/semana: {student_after['Weekly_GenAI_Hours']}h | Estudo Tradicional: {student_after['Traditional_Study_Hours']}h")
     print(f"    - Proficiência de Prompt: {student_after['Prompt_Engineering_Skill']} | Caso de Uso: {student_after['Primary_Use_Case']}")
     print(f"    -> Evolução Prevista de GPA (Delta): {pred_after:+.3f}")
     print(f"    -> GPA Final Estimado: {base_student_data['Pre_Semester_GPA'] + pred_after:.2f}")
     print("="*60)
-    print(f"RESULTADO: O suporte do VeredAI evitou a perda de retenção de conhecimento e proporcionou um ganho líquido de {pred_after - pred_before:+.3f} no GPA do estudante.")
+    print(f"RESULTADO: O suporte da IA evitou a perda de retenção de conhecimento e proporcionou um ganho líquido de {pred_after - pred_before:+.3f} no GPA do estudante.")
     print("="*60)
 
 # =====================================================================
