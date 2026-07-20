@@ -4,11 +4,10 @@ import numpy as np
 import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from plots import plot_sensitivity_analysis, plot_pedagogical_heatmap
+from plots import generate_all_plots
 
 from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import train_test_split
@@ -83,9 +82,9 @@ class StudentDataset(Dataset):
 # 3. ARQUITETURA DA REDE NEURAL (MLP)
 # =====================================================================
 
-class SimuVeredRegressor(nn.Module):
+class SimulaRegressor(nn.Module):
     def __init__(self, input_dim):
-        super(SimuVeredRegressor, self).__init__()
+        super(SimulaRegressor, self).__init__()
         self.network = nn.Sequential(
             nn.Linear(input_dim, 64),
             nn.BatchNorm1d(64),
@@ -179,7 +178,7 @@ def train_model(model, train_loader, val_loader, epochs=12, lr=0.0008, patience=
 # 5. SIMULADOR DE INTERVENÇÃO PEDAGÓGICA (WHAT-IF)
 # =====================================================================
 
-def simulate_veredai_impact(model, preprocessor, base_student_data, target_mean, target_std, device):
+def simula_impacto_ia(model, preprocessor, base_student_data, target_mean, target_std, device):
     """
     Simula o impacto de uma intervenção de IA nos hábitos do aluno.
     """
@@ -262,26 +261,10 @@ if __name__ == "__main__":
     
     # 3. Inicializar a rede neural
     input_size = X_train.shape[1]
-    model = SimuVeredRegressor(input_dim=input_size).to(device)
+    model = SimulaRegressor(input_dim=input_size).to(device)
     
     # 4. Treinar
     train_losses, val_losses, best_epoch, best_val_loss = train_model(model, train_loader, val_loader, epochs=12, lr=0.0008, patience=5, device=device)
-
-    # 5. Gerar gráfico de perda
-    epochs_range = range(1, len(train_losses) + 1)
-    plt.figure(figsize=(8, 5))
-    plt.plot(epochs_range, train_losses, label='Loss Treino', color='tab:blue', linewidth=2)
-    plt.plot(epochs_range, val_losses, label='Loss Val', color='tab:orange', linewidth=2)
-    plt.xlabel('Época')
-    plt.ylabel('Loss')
-    plt.title('Curva de perda do treinamento da rede neural')
-    plt.legend()
-    plt.grid(True, linestyle='--', alpha=0.3)
-    plt.tight_layout()
-    os.makedirs('plots', exist_ok=True)
-    plt.savefig('plots/loss_curve.png', dpi=300, bbox_inches='tight')
-    plt.close()
-    print("Gráfico salvo em plots/loss_curve.png")
 
     # 5. Definir o estudante de exemplo para as análises
     exemplo_estudante = {
@@ -298,13 +281,23 @@ if __name__ == "__main__":
         'Perceived_AI_Dependency': 5
     }
     
-    # 6. Gerar a Curva de Sensibilidade (O perigo do uso excessivo e sem tutor)
-    plot_sensitivity_analysis(model, preprocessor, exemplo_estudante, device=device)
-    
-    # 7. Gerar o Heatmap Bidimensional (Equilíbrio de estudo)
-    plot_pedagogical_heatmap(model, preprocessor, exemplo_estudante, device=device)
+    # 6. Gerar todos os gráficos a partir de plots.py
+# 6. Gerar todos os gráficos a partir de plots.py (Passando parâmetros de desnormalização)
+    generate_all_plots(
+        model=model,
+        train_losses=train_losses,
+        val_losses=val_losses,
+        best_epoch=best_epoch,
+        val_loader=val_loader,
+        preprocessor=preprocessor,
+        base_student_data=exemplo_estudante,
+        target_mean=target_mean,   # <-- Adicionado
+        target_std=target_std,     # <-- Adicionado
+        device=device,
+    )
+    print("Gráficos gerados com sucesso em plots/.")
 
-    # 8. Executar simulação teórica para um aluno de STEM no primeiro ano
-    simulate_veredai_impact(model, preprocessor, exemplo_estudante, target_mean, target_std, device)
+    # 7. Executar simulação teórica para um aluno de STEM no primeiro ano
+    simula_impacto_ia(model, preprocessor, exemplo_estudante, target_mean, target_std, device)
 
     torch.save(model.state_dict(), 'simuvered_model.pth')
