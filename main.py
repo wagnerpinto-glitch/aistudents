@@ -24,7 +24,7 @@ if hasattr(torch, "set_num_threads"):
 # 1. PRÉ-PROCESSAMENTO E ENGENHARIA DE FEATURES
 # =====================================================================
 
-def preprocess_data(filepath):
+def preprossamento_dados(filepath):
     # Carregar o dataset
     df = pd.read_csv(filepath)
     
@@ -66,8 +66,7 @@ def preprocess_data(filepath):
 # =====================================================================
 # 2. DATASET CUSTOMIZADO DO PYTORCH
 # =====================================================================
-
-class StudentDataset(Dataset):
+class DatasetEstudante(Dataset):
     def __init__(self, X, y):
         self.X = torch.tensor(X, dtype=torch.float32)
         self.y = torch.tensor(y, dtype=torch.float32)
@@ -81,7 +80,6 @@ class StudentDataset(Dataset):
 # =====================================================================
 # 3. ARQUITETURA DA REDE NEURAL (MLP)
 # =====================================================================
-
 class SimulaRegressor(nn.Module):
     def __init__(self, input_dim):
         super(SimulaRegressor, self).__init__()
@@ -108,8 +106,7 @@ class SimulaRegressor(nn.Module):
 # =====================================================================
 # 4. CICLO DE TREINAMENTO
 # =====================================================================
-
-def train_model(model, train_loader, val_loader, epochs=12, lr=0.0008, patience=5, min_delta=1e-4, device=None):
+def modelo_treinamento(model, train_loader, val_loader, epochs=12, lr=0.0008, patience=5, min_delta=1e-4, device=None):
     criterion = nn.SmoothL1Loss(beta=1.0)
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5, min_lr=1e-5)
@@ -177,11 +174,8 @@ def train_model(model, train_loader, val_loader, epochs=12, lr=0.0008, patience=
 # =====================================================================
 # 5. SIMULADOR DE INTERVENÇÃO PEDAGÓGICA (WHAT-IF)
 # =====================================================================
-
 def simula_impacto_ia(model, preprocessor, base_student_data, target_mean, target_std, device):
-    """
-    Simula o impacto de uma intervenção de IA nos hábitos do aluno.
-    """
+    
     model.eval()
     
     # Cenário A: Estudante antes do uso IA (Pouca habilidade com IA, uso passivo)
@@ -235,7 +229,7 @@ def simula_impacto_ia(model, preprocessor, base_student_data, target_mean, targe
     print("="*60)
 
 # =====================================================================
-# EXECUÇÃO DO PIPELINE
+# INICIO DA EXECUÇÃO DO PIPELINE
 # =====================================================================
 if __name__ == "__main__":
     dataset_path = "data/ai_student_impact_dataset.csv"
@@ -244,18 +238,19 @@ if __name__ == "__main__":
         raise FileNotFoundError(f"Arquivo não encontrado: '{dataset_path}'. Coloque o CSV real na pasta data para usar os dados do projeto.")
 
     # 1. Pré-processar
-    X, y, preprocessor, feature_names, target_mean, target_std = preprocess_data(dataset_path)
+    X, y, preprocessor, feature_names, target_mean, target_std = preprossamento_dados(dataset_path)
     print(f"Dataset carregado com sucesso: {X.shape[0]} amostras e {X.shape[1]} features.")
     
     # 2. Particionar treino e validação
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
     
-    train_dataset = StudentDataset(X_train, y_train)
-    val_dataset = StudentDataset(X_val, y_val)
+    train_dataset = DatasetEstudante(X_train, y_train)
+    val_dataset = DatasetEstudante(X_val, y_val)
 
+    #definir o dispositivo de treinamento (GPU se disponível, caso contrário CPU)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Dispositivo de treinamento: {device}")
-    
+
     train_loader = DataLoader(train_dataset, batch_size=1024, shuffle=True, num_workers=0)
     val_loader = DataLoader(val_dataset, batch_size=1024, shuffle=False, num_workers=0)
     
@@ -264,7 +259,7 @@ if __name__ == "__main__":
     model = SimulaRegressor(input_dim=input_size).to(device)
     
     # 4. Treinar
-    train_losses, val_losses, best_epoch, best_val_loss = train_model(model, train_loader, val_loader, epochs=12, lr=0.0008, patience=5, device=device)
+    train_losses, val_losses, best_epoch, best_val_loss = modelo_treinamento(model, train_loader, val_loader, epochs=12, lr=0.0008, patience=5, device=device)
 
     # 5. Definir o estudante de exemplo para as análises
     exemplo_estudante = {
@@ -281,8 +276,7 @@ if __name__ == "__main__":
         'Perceived_AI_Dependency': 5
     }
     
-    # 6. Gerar todos os gráficos a partir de plots.py
-# 6. Gerar todos os gráficos a partir de plots.py (Passando parâmetros de desnormalização)
+    # 6. Gerar todos os gráficos a partir de plots.py (Passando parâmetros de desnormalização)
     generate_all_plots(
         model=model,
         train_losses=train_losses,
@@ -291,8 +285,8 @@ if __name__ == "__main__":
         val_loader=val_loader,
         preprocessor=preprocessor,
         base_student_data=exemplo_estudante,
-        target_mean=target_mean,   # <-- Adicionado
-        target_std=target_std,     # <-- Adicionado
+        target_mean=target_mean,
+        target_std=target_std,  
         device=device,
     )
     print("Gráficos gerados com sucesso em plots/.")
